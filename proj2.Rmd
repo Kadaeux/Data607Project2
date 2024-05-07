@@ -3,12 +3,12 @@ title: "Project2"
 author: "Nicholas Kunze"
 date: "2024-03-24"
 output:
-  pdf_document: default
   html_document:
     highlight: pygments
     theme: cerulean
     toc: true
     toc_float: true
+  pdf_document: default
 editor_options: 
   chunk_output_type: inline
 params:
@@ -83,4 +83,6 @@ cor(pop_density$density, pop_density$growthRate)
 ggplot(data = pop_density, mapping = aes(x = density, y = growthRate, color = country)) +
   geom_point(show.legend = FALSE)
 ```
+
+
 It does appear that there is a decent enough negative correlation between population density and growth rate.
