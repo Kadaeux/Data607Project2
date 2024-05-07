@@ -1,0 +1,86 @@
+---
+title: "Project2"
+author: "Nicholas Kunze"
+date: "2024-03-24"
+output:
+  pdf_document: default
+  html_document:
+    highlight: pygments
+    theme: cerulean
+    toc: true
+    toc_float: true
+editor_options: 
+  chunk_output_type: inline
+params:
+  dbuser: 
+    label: "Username"
+    value: "nicholas.kunze77"
+    input: text
+  dbpass: 
+    label: "Password"
+    value: "nicholas.kunze77"
+    input: password
+  dbname: 
+    label: "Database"
+    value: "nicholas.kunze77"
+    input: password
+  dbhost: 
+    label: "Host"
+    value: "cunydata607sql.mysql.database.azure.com"
+    input: password
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+if("tidyverse" %in% rownames(installed.packages()) == FALSE) {install.packages("tidyverse")}
+if("RMySQL" %in% rownames(installed.packages()) == FALSE) {install.packages("RMySQL")}
+library(RMySQL)
+library(tidyverse)
+library(dplyr)
+library(stringr)
+```
+
+## Summary
+
+In this project, I showcase preparing datasets for downstream analysis work; this specifically deals with wide datasets and getting them ready by making them follow the rules of a tidy dataset. For this project, I chose my own discussion item, world population data and projects. 
+
+## World Population History and Projections
+
+Get table from MySQL server and get head of new DataFrame.
+
+```{r getdb-pop}
+azuredb = dbConnect(MySQL(), user=params$dbuser, password=params$dbpass, dbname=params$dbname, host=params$dbhost)
+
+pop <- dbGetQuery(azuredb, 
+  "SELECT 
+      *
+   FROM
+      world_population_data;")
+head(pop)
+```
+
+As we can see, this is a wide df showing information for a single country over multiple years with a few unneeded columns. We'd like each row to be a single observation of population for a country. We should gather up these years that are columns, as they are values for 'year', not variable names. Then we can just select the variables we need for analysis.
+
+```{r pop-pivot-years}
+pop <- pop %>% 
+  pivot_longer(cols = `1980`:`2050`, names_to = "year", values_to = "population")
+pop <- pop[,c("country","year","population","landAreaKm","growthRate")]
+head(pop)
+```
+
+```{r pop-analyze-top-5}
+pop_top <- head(pop,30)
+ggplot(data = pop_top, mapping = aes(x = landAreaKm, y = population, color = country)) +
+  geom_point()
+```
+It looks like our big 5 nations are actually slowing down over time regarding their pop growth.
+
+Now, I'm curious if density has any correlation with growth...
+
+```{r pop-analyze-growth-density}
+pop_density <- mutate(pop, density = population/landAreaKm)
+cor(pop_density$density, pop_density$growthRate)
+ggplot(data = pop_density, mapping = aes(x = density, y = growthRate, color = country)) +
+  geom_point(show.legend = FALSE)
+```
+It does appear that there is a decent enough negative correlation between population density and growth rate.
